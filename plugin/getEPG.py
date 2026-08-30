@@ -17,6 +17,7 @@ from Components.config import config
 from . import tunerports, getHost
 from .getLineup import getLineup
 from .epgmetadata import episode_numbers, genres, ratings
+from .picons import picon_url
 
 
 _INVALID_XML_CHARS = re.compile(u"[\x00-\x08\x0b\x0c\x0e-\x1f\ud800-\udfff\ufffe\uffff]")
@@ -113,6 +114,10 @@ class getEPG:
 			lines.append('  <channel id="%s">' % _xml(channel_number))
 			lines.append('    <display-name>%s</display-name>' % _xml(channel_name))
 			lines.append('    <display-name>%s</display-name>' % _xml(channel_number))
+			if config.hrtunerproxy.provide_picons.value:
+				icon_url = picon_url(host, tunerports[self.dvbtype], channel_number, service_ref)
+				if icon_url:
+					lines.append('    <icon src="%s" />' % _xml(icon_url))
 			lines.append('  </channel>')
 
 		for channel_number, channel_name, service_ref, channel_type in channels:

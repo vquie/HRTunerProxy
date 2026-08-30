@@ -173,6 +173,14 @@ msgstr ""
 msgid "Press OK to continue setting up."
 msgstr ""
 
+#: ../plugin.py:224
+msgid "Provide channel logos (Beta)."
+msgstr "Senderlogos bereitstellen (Beta)."
+
+#: ../plugin.py:285 ../plugin.py:310 ../plugin.py:329
+msgid "Beta: Every Plex client must be able to reach this receiver directly to load channel logos."
+msgstr "Beta: Jeder Plex-Client muss diesen Receiver direkt erreichen können, um Senderlogos zu laden."
+
 #: ../plugin.py:408
 msgid "Really close without saving settings?"
 msgstr ""

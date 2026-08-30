@@ -6,6 +6,7 @@ import argparse
 import urllib
 import os
 import json
+import re
 import six
 
 from sys import modules
@@ -20,6 +21,7 @@ from .getLineup import getlineup
 from .getLineupStatus import getlineupstatus
 from .getDeviceInfo import getdeviceinfo
 from .getEPG import getepg
+from .picons import channel_picon
 from Components.config import config
 
 
@@ -63,7 +65,28 @@ class RootedHTTPRequestHandler(RootedBaseHTTPRequestHandler):
 		elif self.path.endswith(".ico"):
 			mimeType = 'image/x-icon'
 
-		if self.path.endswith("lineup_status.json"):
+		picon_match = re.match(r"^/picon/([0-9]+)[.]png(?:[?].*)?$", self.path)
+		if picon_match:
+			if not config.hrtunerproxy.provide_picons.value:
+				self.send_error(404, '[HRTunerProxy] Picon provider is disabled!')
+				return
+			picon_path = channel_picon(tunertype, config.hrtunerproxy.bouquets_list[tunertype].value, picon_match.group(1))
+			if not picon_path:
+				self.send_error(404, '[HRTunerProxy] Picon not found!')
+				return
+			try:
+				with open(picon_path, 'rb') as picon_file:
+					picon_data = picon_file.read()
+			except Exception:
+				self.send_error(404, '[HRTunerProxy] Picon not found!')
+				return
+			self.send_response(200)
+			self.send_header('Content-type', 'image/png')
+			self.send_header('Content-Length', str(len(picon_data)))
+			self.send_header('Cache-Control', 'public, max-age=86400')
+			self.end_headers()
+			self.wfile.write(picon_data)
+		elif self.path.endswith("lineup_status.json"):
 			self.send_response(200)
 			self.send_header('Content-type', mimeType)
 			self.end_headers()

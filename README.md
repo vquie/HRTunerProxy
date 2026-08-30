@@ -5,6 +5,8 @@ Setup Enigma2 to act as HR Proxy Server.
 
 The guide is available as `/epg.xml` and `/xmltv.xml` on each configured tuner port. It exports programme descriptions, DVB categories, parental ratings, and common season/episode labels such as `S01E02`, `1x02`, and `Staffel 1, Folge 2`. Episode labels are emitted in both onscreen and `xmltv_ns` formats to improve DVR series matching.
 
+Existing Enigma2 channel picons can optionally be exposed to XMLTV clients. This feature is disabled by default and marked as Beta because Plex guide clients load the image URLs directly. Every Plex client must therefore be able to reach the receiver address configured in HRTunerProxy. Enable **Provide channel logos (Beta)** only when that network requirement is satisfied.
+
 Guide metadata is limited to information present in the receiver's EPG. If a broadcaster supplies no season or episode number, HRTunerProxy does not add one.
 
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=andyblac%40icloud%2ecom&lc=GB&currency_code=GBP&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted)

@@ -220,6 +220,7 @@ class HRTunerProxy_Setup(ConfigListScreen, Screen):
 		self.list.append(getConfigListEntry(_('Bouquet to use.'), config.hrtunerproxy.bouquets_list[config.hrtunerproxy.type.value]))
 		if config.hrtunerproxy.type.value == 'iptv':
 			self.list.append(getConfigListEntry(_('Number of concurrent streams.'), config.hrtunerproxy.iptv_tunercount))
+		self.list.append(getConfigListEntry(_('Provide channel logos (Beta).'), config.hrtunerproxy.provide_picons))
 		self.list.append(getConfigListEntry(_('Debug Mode.'), config.hrtunerproxy.debug))
 		self["config"].list = self.list
 		self["config"].l.setList(self.list)
@@ -280,6 +281,9 @@ class HRTunerProxy_Setup(ConfigListScreen, Screen):
 				elif currentconfig == _('Bouquet to use.'):
 					self["hinttext"].setText(_('Press OK to continue setting up this tuner or select a different tuner type.'))
 					self.hinttext = _('Press LEFT / RIGHT to select a different bouquet.')
+				elif currentconfig == _('Provide channel logos (Beta).'):
+					self["hinttext"].setText(_('Beta: Every Plex client must be able to reach this receiver directly to load channel logos.'))
+					self.hinttext = _('Beta: Every Plex client must be able to reach this receiver directly to load channel logos.')
 				elif currentconfig == _('Debug mode to create logs.'):
 					self["hinttext"].setText(_('Press OK to continue setting up this tuner or select a different tuner type.'))
 					self.hinttext = _('Press LEFT / RIGHT to select a different bouquet.')
@@ -303,6 +307,8 @@ class HRTunerProxy_Setup(ConfigListScreen, Screen):
 					elif currentconfig == _('Bouquet to use.'):
 						print('T3')
 						self.hinttext = _('Press LEFT / RIGHT to select a different bouquet.')
+					elif currentconfig == _('Provide channel logos (Beta).'):
+						self.hinttext = _('Beta: Every Plex client must be able to reach this receiver directly to load channel logos.')
 					elif currentconfig == _('Debug Mode.'):
 						print('T4')
 						self.hinttext = _('Press LEFT / RIGHT to enable or disable debug mode.')
@@ -320,6 +326,8 @@ class HRTunerProxy_Setup(ConfigListScreen, Screen):
 			elif currentconfig == _('Bouquet to use.'):
 				print('T3')
 				self.hinttext = _('Press LEFT / RIGHT to select a different bouquet.')
+			elif currentconfig == _('Provide channel logos (Beta).'):
+				self.hinttext = _('Beta: Every Plex client must be able to reach this receiver directly to load channel logos.')
 			elif currentconfig == _('Debug Mode.'):
 				print('T4')
 				self.hinttext = _('Press LEFT / RIGHT to enable or disable debug mode.')
@@ -384,6 +392,7 @@ class HRTunerProxy_Setup(ConfigListScreen, Screen):
 				config.hrtunerproxy.type.save()
 			config.hrtunerproxy.host.save()
 			config.hrtunerproxy.bouquets_list[config.hrtunerproxy.type.value].save()
+			config.hrtunerproxy.provide_picons.save()
 			config.hrtunerproxy.debug.save()
 			configfile.save()
 			if self.savedval != config.hrtunerproxy.type.value and path.exists('/etc/enigma2/%s.device' % self.savedval) or newsetup:
