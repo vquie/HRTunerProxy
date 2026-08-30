@@ -20,6 +20,16 @@ from .epgmetadata import episode_numbers, genres, ratings
 
 
 _INVALID_XML_CHARS = re.compile(u"[\x00-\x08\x0b\x0c\x0e-\x1f\ud800-\udfff\ufffe\uffff]")
+_MOJIBAKE_REPLACEMENTS = (
+	(u"Ã¤", u"ä"),
+	(u"Ã¶", u"ö"),
+	(u"Ã¼", u"ü"),
+	(u"Ã„", u"Ä"),
+	(u"Ã–", u"Ö"),
+	(u"Ãœ", u"Ü"),
+	(u"Ã\x9f", u"ß"),
+	(u"Â\xa0", u"\xa0"),
+)
 
 
 def _text(text):
@@ -32,6 +42,13 @@ def _text(text):
 	# DVB text can contain bare carriage returns. Normalize them so a closing
 	# XML tag cannot overwrite the start of its line in terminal-like clients.
 	text = text.replace("\r\n", "\n").replace("\r", "\n")
+	# Some DVB providers expose already mis-decoded German UTF-8 text. Repair
+	# only the observed unambiguous sequences. A bare currency sign is an
+	# umlaut inside a word and a Euro sign elsewhere in these feeds.
+	for mojibake, replacement in _MOJIBAKE_REPLACEMENTS:
+		text = text.replace(mojibake, replacement)
+	text = re.sub(u"(?<=\\w)¤(?=\\w)", u"ä", text, flags=re.UNICODE)
+	text = text.replace(u"¤", u"€")
 	return _INVALID_XML_CHARS.sub("", text)
 
 
