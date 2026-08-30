@@ -39,7 +39,10 @@ sys.modules["enigma"] = enigma
 components = types.ModuleType("Components")
 components.__path__ = []
 config_module = types.ModuleType("Components.config")
-config_module.config = types.SimpleNamespace(hrtunerproxy=types.SimpleNamespace(debug=types.SimpleNamespace(value=False)))
+config_module.config = types.SimpleNamespace(hrtunerproxy=types.SimpleNamespace(
+	debug=types.SimpleNamespace(value=False),
+	provide_picons=types.SimpleNamespace(value=False),
+))
 converter = types.ModuleType("Components.Converter")
 converter.__path__ = []
 genre_module = types.ModuleType("Components.Converter.genre")
@@ -106,6 +109,36 @@ class GetEPGTest(unittest.TestCase):
 		self.assertIsNone(programme.find("sub-title"))
 		self.assertTrue(programme.findtext("desc").startswith("Staffel-Premiere."))
 		self.assertNotIn("</desc>sc>", xml)
+
+	def test_existing_channel_picon_is_added_to_xmltv(self):
+		epg = get_epg_module.getEPG.__new__(get_epg_module.getEPG)
+		epg.dvbtype = "DVB-S"
+		epg.bouquet_name = "test"
+		epg.channels = [("1", "Example Channel", "1:0:1:TEST:", "DVB-S")]
+		epg.epgcache = FakeEPGCache()
+		original_picon_url = get_epg_module.picon_url
+		get_epg_module.picon_url = lambda host, port, number, service_ref: "http://receiver.local:6083/picon/1.png"
+		config_module.config.hrtunerproxy.provide_picons.value = True
+		try:
+			root = ElementTree.fromstring(epg.xmltv())
+		finally:
+			config_module.config.hrtunerproxy.provide_picons.value = False
+			get_epg_module.picon_url = original_picon_url
+		self.assertEqual("http://receiver.local:6083/picon/1.png", root.find("channel/icon").get("src"))
+
+	def test_channel_picons_are_disabled_by_default(self):
+		epg = get_epg_module.getEPG.__new__(get_epg_module.getEPG)
+		epg.dvbtype = "DVB-S"
+		epg.bouquet_name = "test"
+		epg.channels = [("1", "Example Channel", "1:0:1:TEST:", "DVB-S")]
+		epg.epgcache = FakeEPGCache()
+		original_picon_url = get_epg_module.picon_url
+		get_epg_module.picon_url = lambda host, port, number, service_ref: "http://receiver.local:6083/picon/1.png"
+		try:
+			root = ElementTree.fromstring(epg.xmltv())
+		finally:
+			get_epg_module.picon_url = original_picon_url
+		self.assertIsNone(root.find("channel/icon"))
 
 
 if __name__ == "__main__":

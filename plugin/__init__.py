@@ -73,6 +73,7 @@ for type in tunerTypes:
 config.hrtunerproxy.iptv_tunercount = ConfigSelectionNumber(min=1, max=10, stepwidth=1, default=2, wraparound=True)
 config.hrtunerproxy.slotsinuse = NoSave(ConfigNumber())
 config.hrtunerproxy.host = ConfigText(default="", fixed_size=False)
+config.hrtunerproxy.provide_picons = ConfigEnableDisable(default=False)
 config.hrtunerproxy.debug = ConfigEnableDisable(default=False)
 
 
