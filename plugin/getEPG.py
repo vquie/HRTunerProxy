@@ -2,6 +2,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 import time
+import re
 import six
 try:
 	from xml.sax.saxutils import escape
@@ -15,12 +16,27 @@ from Components.config import config
 
 from . import tunerports, getHost
 from .getLineup import getLineup
+from .epgmetadata import episode_numbers, genres, ratings
+
+
+_INVALID_XML_CHARS = re.compile(u"[\x00-\x08\x0b\x0c\x0e-\x1f\ud800-\udfff\ufffe\uffff]")
+
+
+def _text(text):
+	if text is None:
+		return ""
+	if isinstance(text, six.binary_type):
+		text = text.decode("utf-8", "replace")
+	else:
+		text = six.text_type(text)
+	# DVB text can contain bare carriage returns. Normalize them so a closing
+	# XML tag cannot overwrite the start of its line in terminal-like clients.
+	text = text.replace("\r\n", "\n").replace("\r", "\n")
+	return _INVALID_XML_CHARS.sub("", text)
 
 
 def _xml(text):
-	if text is None:
-		return ""
-	return escape(six.text_type(text), {'"': "&quot;", "'": "&apos;"})
+	return escape(_text(text), {'"': "&quot;", "'": "&apos;"})
 
 
 def _xmltv_time(timestamp):
@@ -50,8 +66,14 @@ class getEPG:
 		if not self.epgcache:
 			return []
 		try:
-			return self.epgcache.lookupEvent(['IBDTSERN', (service_ref, 0, -1, -1)])
+			# W and P expose DVB content and parental rating descriptors.
+			return self.epgcache.lookupEvent(['IBDTSEWP', (service_ref, 0, -1, -1)]) or []
 		except Exception as e:
+			# Some older Enigma2 images do not support the additional fields.
+			try:
+				return self.epgcache.lookupEvent(['IBDTSE', (service_ref, 0, -1, -1)]) or []
+			except Exception:
+				pass
 			if config.hrtunerproxy.debug.value:
 				print("[HRTunerProxy] EPG lookup failed for %s: %s" % (service_ref, e))
 			return []
@@ -80,19 +102,36 @@ class getEPG:
 				begin = int(event[1])
 				duration = int(event[2])
 				stop = begin + duration
-				title = event[3] or ""
-				short_description = event[4] if len(event) > 4 else ""
-				extended_description = event[5] if len(event) > 5 else ""
+				title = _text(event[3])
+				short_description = _text(event[4]) if len(event) > 4 else ""
+				extended_description = _text(event[5]) if len(event) > 5 else ""
+				genre_data = event[6] if len(event) > 6 else None
+				parental_data = event[7] if len(event) > 7 else None
 
 				if not title or duration <= 0:
 					continue
 
 				lines.append('  <programme start="%s" stop="%s" channel="%s">' % (_xmltv_time(begin), _xmltv_time(stop), _xml(channel_number)))
 				lines.append('    <title>%s</title>' % _xml(title))
-				if short_description:
+				if short_description and short_description != title:
 					lines.append('    <sub-title>%s</sub-title>' % _xml(short_description))
 				if extended_description:
 					lines.append('    <desc>%s</desc>' % _xml(extended_description))
+				elif short_description and short_description != title:
+					lines.append('    <desc>%s</desc>' % _xml(short_description))
+				onscreen, xmltv_ns = episode_numbers(title, short_description, extended_description)
+				categories = genres(genre_data)
+				if onscreen and "series" not in [category.lower() for category in categories]:
+					categories.append("Series")
+				for category in categories:
+					lines.append('    <category>%s</category>' % _xml(category))
+				if onscreen:
+					lines.append('    <episode-num system="onscreen">%s</episode-num>' % _xml(onscreen))
+					lines.append('    <episode-num system="xmltv_ns">%s</episode-num>' % _xml(xmltv_ns))
+				for country, minimum_age in ratings(parental_data):
+					lines.append('    <rating system="%s">' % _xml(country))
+					lines.append('      <value>%d+</value>' % minimum_age)
+					lines.append('    </rating>')
 				lines.append('  </programme>')
 
 		lines.append('</tv>')
